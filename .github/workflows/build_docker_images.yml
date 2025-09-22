@@ -12,36 +12,37 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        couchbase_env: [{version: 3.2.2, platforms: "linux/amd64"}, {version: 4.3.0, platforms: "linux/amd64,linux/arm64/v8"}]
+        env:
+          - version: "3.2.2"
+            platforms: "linux/amd64"
+            tags: "deminy/couchbase-network-check:3.2.2"
+          - version: "4.3.0"
+            platforms: "linux/amd64,linux/arm64/v8"
+            tags: "deminy/couchbase-network-check:4.3.0,deminy/couchbase-network-check:latest"
 
     steps:
-      -
-        name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v5
 
-      -
-        name: Set up QEMU
+      - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      -
-        name: Set up Docker Buildx
+      - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      -
-        name: Login to DockerHub
+      - name: Login to DockerHub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      -
-        name: Build and Publish Docker Image
+      - name: Build and Publish Docker Image (${{ matrix.env.version }})
         id: docker_build
         uses: docker/build-push-action@v6
         with:
           context: .
           build-args: |
-            COUCHBASE_VERSION=${{ matrix.couchbase_env.version }}
-          platforms: ${{ matrix.couchbase_env.platforms }}
+            COUCHBASE_VERSION=${{ matrix.env.version }}
+          platforms: ${{ matrix.env.platforms }}
           push: true
-          tags: deminy/couchbase-network-check:${{ matrix.couchbase_env.version }}
+          tags: ${{ matrix.env.tags }}
