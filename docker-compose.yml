@@ -1,0 +1,22 @@
+services:
+  couchbase3:
+    build:
+      context: .
+      args:
+        COUCHBASE_VERSION: 3.2.2
+    platform: linux/amd64
+    volumes:
+      - ./:/var/www
+  couchbase4:
+    build:
+      context: .
+      args:
+        COUCHBASE_VERSION: 4.3.0
+    volumes:
+      - ./:/var/www
+  server:
+    image: deminy/couchbase:7.6.6
+    environment:
+      CB_ADMIN: username
+      CB_ADMIN_PASSWORD: password
+      CB_BUCKET: test
