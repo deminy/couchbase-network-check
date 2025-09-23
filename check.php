@@ -15,50 +15,65 @@ if (is_readable($_SERVER['HOME'] . '/.composer/vendor/autoload.php')) {
     require_once $_SERVER['HOME'] . '/.composer/vendor/autoload.php';
 }
 
+use Couchbase\Bucket;
 use Couchbase\Cluster;
 use Couchbase\ClusterOptions;
-use Couchbase\UpsertOptions;
+use Couchbase\InsertOptions;
 
-class DataHelper
-{
+/**
+ * The helper class to parse the KV report from Couchbase server.
+ */
+class CouchbaseKvReport {
     /**
-     * Default number of items to generate.
+     * @var int The major version of the Couchbase PHP SDK.
      */
-    protected const DEFAULT_COUNT = 20;
+    protected readonly int $majorVersion;
 
     /**
-     * Get Couchbase data.
-     * @param int $count number of items to generate
-     * @return array<string, array<string, string>>
+     * @var string The field name for the state/status of the Couchbase node, depending on the SDK version.
      */
-    public static function getCouchbaseData(int $count = self::DEFAULT_COUNT): array
-    {
-        return self::getData(fn (string $key) => [$key, json_encode(['foo' => 'bar'])], $count);
+    protected readonly string $fieldState;
+
+    /**
+     * @var array The report data structure to hold the parsed KV report.
+     */
+    protected array $report = [];
+
+    public function __construct() {
+        $this->majorVersion = (int) explode('.', (phpversion('couchbase') ?: ''))[0];
+        $this->fieldState   = match ($this->majorVersion) {
+            3 => 'status',
+            4 => 'state',
+        };
     }
 
     /**
-     * Get Couchbase data.
-     * @param int $count number of items to generate
-     * @return array<string, array<string, string>>
+     * To parse the KV report from Couchbase server.
      */
-    protected static function getData(callable $callback, int $count = self::DEFAULT_COUNT): array
+    public function parseKvReport(Bucket $bucket)
     {
-        $data  = [];
-        for ($i = 0; $i < $count; $i++) {
-            $key = self::getNewKey();
-            if (!array_key_exists($key, $data)) {
-                $data[$key] = $callback($key);
-            } else {
-                $count++;
+        $result = match ($this->majorVersion) {
+            3 => $bucket->diagnostics('kv')['kv'],
+            4 => $bucket->diagnostics('kv')['services']['kv'],
+        };
+
+        foreach ($result as $row) {
+            if (!isset($this->report[$row[$this->fieldState]])) {
+                $this->report[$row[$this->fieldState]] = [];
             }
+            if (!isset($this->report[$row[$this->fieldState]][$row['remote']])) {
+                $this->report[$row[$this->fieldState]][$row['remote']] = 0;
+            }
+            $this->report[$row[$this->fieldState]][$row['remote']]++;
         }
-
-        return $data;
     }
 
-    protected static function getNewKey(): string
+    /**
+     * @return array The parsed KV report.
+     */
+    public function getKvReport(): array
     {
-        return uniqid('test-');
+        return $this->report;
     }
 }
 
@@ -67,13 +82,22 @@ $username = $_SERVER['COUCHBASE_USER'] ?? 'username';
 $password = $_SERVER['COUCHBASE_PASS'] ?? 'password';
 $bucket   = $_SERVER['COUCHBASE_BUCKET'] ?? 'test';
 
-$options = new ClusterOptions();
-$options->credentials($username, $password);
-$cluster = new Cluster($connstr, $options);
+$clusterOptions = new ClusterOptions();
+$clusterOptions->credentials($username, $password);
+$cluster = new Cluster($connstr, $clusterOptions);
 $bucket  = $cluster->bucket($bucket);
 
-$upsertOptions = new UpsertOptions();
-$upsertOptions->expiry(new \DateTime('+60 seconds'));
-$bucket->defaultCollection()->upsertMulti(array_values(DataHelper::getCouchbaseData()), $upsertOptions);
+$insertOptions = new InsertOptions();
+$insertOptions->expiry(new \DateTime('+60 seconds'));
+$value  = json_encode(['foo' => 'bar']);
+$report = new CouchbaseKvReport();
+for ($i = 0; $i < 23; $i++) {
+    $bucket->defaultCollection()->insert(uniqid('test-'), $value, $insertOptions);
+    $report->parseKvReport($bucket);
+}
 
-print_r($bucket->diagnostics('kv'));
+foreach ($report->getKvReport() as $state => $row) {
+    foreach ($row as $host => $count) {
+        printf("There are %d \"%s\" connections for Couchbase node %s.\n", $count, $state, $host);
+    }
+}
