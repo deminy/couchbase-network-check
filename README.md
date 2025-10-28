@@ -16,13 +16,7 @@ docker run --rm --platform=linux/amd64 \
   -e COUCHBASE_CONNSTR="couchbase://host.docker.internal" \
   -e COUCHBASE_USER="username" \
   -e COUCHBASE_PASS="password" \
-  -ti deminy/couchbase-network-check:3.2.2
-
-docker run --rm \
-  -e COUCHBASE_CONNSTR="couchbase://host.docker.internal" \
-  -e COUCHBASE_USER="username" \
-  -e COUCHBASE_PASS="password" \
-  -ti deminy/couchbase-network-check:4.4.0
+  -ti deminy/couchbase-network-check
 ```
 
 ## Environment Variables
@@ -50,7 +44,7 @@ docker run --rm --platform=linux/amd64 \
   -e COUCHBASE_PASS="password" \
   -e COUCHBASE_BUCKET="test" \
   -e COUCHBASE_READONLY=1 \
-  -ti deminy/couchbase-network-check:3.2.2
+  -ti deminy/couchbase-network-check
 ```
 
 ### Debug-level Logging
@@ -61,7 +55,7 @@ docker run --rm \
   -e COUCHBASE_USER="username" \
   -e COUCHBASE_PASS="password" \
   -e COUCHBASE_LOG_LEVEL=debug \
-  -ti deminy/couchbase-network-check:4.4.0
+  -ti deminy/couchbase-network-check
 ```
 
 ## Local Development with Docker
@@ -69,13 +63,12 @@ docker run --rm \
 ### 1. Build Docker Images Manually
 
 ```bash
+docker build --build-arg COUCHBASE_VERSION=4.4.0 -t deminy/couchbase-network-check .
+docker build --build-arg COUCHBASE_VERSION=4.4.0 -t deminy/couchbase-network-check:4.4.0 .
+
 docker build --platform linux/amd64 \
   --build-arg COUCHBASE_VERSION=3.2.2 \
   -t deminy/couchbase-network-check:3.2.2 .
-
-docker build \
-  --build-arg COUCHBASE_VERSION=4.4.0 \
-  -t deminy/couchbase-network-check:4.4.0 .
 ```
 
 ### 2. Start the Docker Containers
