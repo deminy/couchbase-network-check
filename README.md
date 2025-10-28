@@ -15,7 +15,7 @@ docker run --rm \
   -e COUCHBASE_USER="username" \
   -e COUCHBASE_PASS="password" \
   -e COUCHBASE_BUCKET="test" \
-  -ti deminy/couchbase-network-check:4.3.0
+  -ti deminy/couchbase-network-check:4.4.0
 ```
 
 In case you want to perform read-only checks, you can set the environment variable `COUCHBASE_READONLY` to `1`:
@@ -35,7 +35,7 @@ docker run --rm \
   -e COUCHBASE_PASS="password" \
   -e COUCHBASE_BUCKET="test" \
   -e COUCHBASE_READONLY=1 \
-  -ti deminy/couchbase-network-check:4.3.0
+  -ti deminy/couchbase-network-check:4.4.0
 ```
 
 ## Local Development with Docker
@@ -48,8 +48,8 @@ docker build --platform linux/amd64 \
   -t deminy/couchbase-network-check:3.2.2 .
 
 docker build \
-  --build-arg COUCHBASE_VERSION=4.3.0 \
-  -t deminy/couchbase-network-check:4.3.0 .
+  --build-arg COUCHBASE_VERSION=4.4.0 \
+  -t deminy/couchbase-network-check:4.4.0 .
 ```
 
 ### 2. Start the Docker Containers
@@ -60,7 +60,7 @@ docker compose up -d
 
 # Check Couchbase extension information.
 docker compose exec -ti couchbase3 php --ri couchbase # PHP SDK v3.2.2
-docker compose exec -ti couchbase4 php --ri couchbase # PHP SDK v4.3.0
+docker compose exec -ti couchbase4 php --ri couchbase # PHP SDK v4.4.0
 ```
 
 ### 3. Check Network Connectivity
