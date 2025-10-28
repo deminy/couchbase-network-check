@@ -13,10 +13,12 @@ jobs:
       fail-fast: false
       matrix:
         env:
-          - version: "3.2.2"
+          - couchbase_version: "3.2.2"
+          - php_version: "8.1"
             platforms: "linux/amd64"
             tags: "deminy/couchbase-network-check:3.2.2"
-          - version: "4.4.0"
+          - couchbase_version: "4.4.0"
+          - php_version: "8.4"
             platforms: "linux/amd64,linux/arm64/v8"
             tags: "deminy/couchbase-network-check:4.4.0,deminy/couchbase-network-check:latest"
 
@@ -36,13 +38,14 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and Publish Docker Image (${{ matrix.env.version }})
+      - name: Build and Publish Docker Image (${{ matrix.env.couchbase_version }})
         id: docker_build
         uses: docker/build-push-action@v6
         with:
           context: .
           build-args: |
-            COUCHBASE_VERSION=${{ matrix.env.version }}
+            COUCHBASE_VERSION=${{ matrix.env.couchbase_version }}
+            PHP_VERSION=${{ matrix.env.php_version }}
           platforms: ${{ matrix.env.platforms }}
           push: true
           tags: ${{ matrix.env.tags }}
