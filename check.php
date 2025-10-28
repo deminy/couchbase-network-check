@@ -84,17 +84,35 @@ if (!empty($logLevel)) {
     ini_set('couchbase.log_level', ($couchbaseVersion >= 4) ? strtolower($logLevel) : strtoupper($logLevel));
 }
 
-$connstr  = $_SERVER['COUCHBASE_CONNSTR'] ?? 'couchbase://server';
-$username = $_SERVER['COUCHBASE_USER'] ?? 'username';
-$password = $_SERVER['COUCHBASE_PASS'] ?? 'password';
-$bucket   = $_SERVER['COUCHBASE_BUCKET'] ?? 'test';
-$readOnly = isset($_SERVER['COUCHBASE_READONLY']);
+$connstr    = $_SERVER['COUCHBASE_CONNSTR'] ?? 'couchbase://server';
+$username   = $_SERVER['COUCHBASE_USER'] ?? 'username';
+$password   = $_SERVER['COUCHBASE_PASS'] ?? 'password';
+$bucketName = $_SERVER['COUCHBASE_BUCKET'] ?? '';
+$readOnly   = isset($_SERVER['COUCHBASE_READONLY']);
 
 $clusterOptions = new ClusterOptions();
 $clusterOptions->credentials($username, $password);
 $cluster = new Cluster($connstr, $clusterOptions);
-$bucket  = $cluster->bucket($bucket);
 
+// No bucket name specified, list all buckets.
+if (empty($bucketName)) {
+    echo "Listing all buckets in the cluster: ";
+    $bucketsFound = false;
+    foreach ($cluster->buckets()->getAllBuckets() as $bucketSettings) {
+        if (!$bucketsFound) {
+            $bucketsFound = true;
+        } else {
+            echo ', ';
+        }
+
+        /** \Couchbase\Management\BucketSettings $bucketSettings */
+        echo $bucketSettings->name();
+    }
+    echo '.', PHP_EOL;
+    exit(0);
+}
+
+$bucket = $cluster->bucket($bucketName);
 $keys   = array_map(fn() => uniqid('test-') . '-' . rand(1, PHP_INT_MAX), range(1, 23));
 $report = new CouchbaseKvReport();
 if ($readOnly) {
@@ -114,6 +132,6 @@ if ($readOnly) {
 
 foreach ($report->getKvReport() as $state => $row) {
     foreach ($row as $host => $count) {
-        printf("There are %d \"%s\" connections for Couchbase node %s.\n", $count, $state, $host);
+        printf("There are %d \"%s\" connections to Couchbase node \"%s\".\n", $count, $state, $host);
     }
 }

@@ -7,43 +7,41 @@ Test and check Couchbase network connectivity using PHP SDKs.
 - Configurable log verbosity
 - Dockerized for easy usage
 
-## How to Use
+## Quick Start
 
-Run the following Docker command with four required environment variables specified:
+Pull and run the Docker image with required environment variables:
 
 ```bash
 docker run --rm --platform=linux/amd64 \
   -e COUCHBASE_CONNSTR="couchbase://host.docker.internal" \
   -e COUCHBASE_USER="username" \
   -e COUCHBASE_PASS="password" \
-  -e COUCHBASE_BUCKET="test" \
   -ti deminy/couchbase-network-check:3.2.2
 
 docker run --rm \
   -e COUCHBASE_CONNSTR="couchbase://host.docker.internal" \
   -e COUCHBASE_USER="username" \
   -e COUCHBASE_PASS="password" \
-  -e COUCHBASE_BUCKET="test" \
   -ti deminy/couchbase-network-check:4.4.0
 ```
 
-### Environment Variables
+## Environment Variables
 
-#### Required Environment Variables
+### Required
 
 - `COUCHBASE_CONNSTR`: Couchbase connection string (e.g., `couchbase://host.docker.internal`)
 - `COUCHBASE_USER`: Couchbase username
 - `COUCHBASE_PASS`: Couchbase password
-- `COUCHBASE_BUCKET`: Couchbase bucket name
 
-#### Optional Environment Variables
+### Optional
 
-- `COUCHBASE_READONLY`: Set to `1` to perform read-only checks
-- `COUCHBASE_LOG_LEVEL`: Set to `debug` or `trace` for verbose logging
+- `COUCHBASE_BUCKET`: To perform read/write checks on a specific bucket. If not set, only basic connectivity checks are performed.
+- `COUCHBASE_READONLY`: Set to `1` to perform read-only checks on the specified bucket. Requires `COUCHBASE_BUCKET`.
+- `COUCHBASE_LOG_LEVEL`: Set to `debug` or `trace` for verbose logging.
 
-### Examples
+## Usage Examples
 
-#### Example: Read-only Checks
+### Read-only Checks
 
 ```bash
 docker run --rm --platform=linux/amd64 \
@@ -55,14 +53,13 @@ docker run --rm --platform=linux/amd64 \
   -ti deminy/couchbase-network-check:3.2.2
 ```
 
-#### Example: Debug-level Logging
+### Debug-level Logging
 
 ```bash
 docker run --rm \
   -e COUCHBASE_CONNSTR="couchbase://host.docker.internal" \
   -e COUCHBASE_USER="username" \
   -e COUCHBASE_PASS="password" \
-  -e COUCHBASE_BUCKET="test" \
   -e COUCHBASE_LOG_LEVEL=debug \
   -ti deminy/couchbase-network-check:4.4.0
 ```
@@ -84,10 +81,8 @@ docker build \
 ### 2. Start the Docker Containers
 
 ```bash
-# Use Docker Compose to start Docker containers.
 docker compose up -d
 
-# Check Couchbase extension information.
 docker compose exec -ti couchbase3 php --ri couchbase # PHP SDK v3.2.2
 docker compose exec -ti couchbase4 php --ri couchbase # PHP SDK v4.4.0
 ```
@@ -95,12 +90,17 @@ docker compose exec -ti couchbase4 php --ri couchbase # PHP SDK v4.4.0
 ### 3. Check Network Connectivity
 
 ```bash
+# Basic connectivity checks:
 docker compose exec -ti couchbase3 php ./check.php
 docker compose exec -ti couchbase4 php ./check.php
 
+# Perform read/write checks on a specific bucket:
+docker compose exec -e COUCHBASE_BUCKET=test -ti couchbase3 php ./check.php
+docker compose exec -e COUCHBASE_BUCKET=test -ti couchbase4 php ./check.php
+
 # Read-only checks:
-docker compose exec -e COUCHBASE_READONLY=1 -ti couchbase3 php ./check.php
-docker compose exec -e COUCHBASE_READONLY=1 -ti couchbase4 php ./check.php
+docker compose exec -e COUCHBASE_BUCKET=test -e COUCHBASE_READONLY=1 -ti couchbase3 php ./check.php
+docker compose exec -e COUCHBASE_BUCKET=test -e COUCHBASE_READONLY=1 -ti couchbase4 php ./check.php
 
 # Debug-level logging:
 docker compose exec -e COUCHBASE_LOG_LEVEL=debug -ti couchbase3 php ./check.php
@@ -112,8 +112,6 @@ docker compose exec -e COUCHBASE_LOG_LEVEL=trace -ti couchbase4 php ./check.php
 ```
 
 ### 4. Clean Up
-
-Stop the Docker containers to clean up:
 
 ```bash
 docker compose down
