@@ -77,6 +77,13 @@ class CouchbaseKvReport {
     }
 }
 
+// Set customized log level if specified.
+$logLevel = $_SERVER['COUCHBASE_LOG_LEVEL'] ?? '';
+if (!empty($logLevel)) {
+    $couchbaseVersion = (int) explode('.', (phpversion('couchbase') ?: ''))[0];
+    ini_set('couchbase.log_level', ($couchbaseVersion >= 4) ? strtolower($logLevel) : strtoupper($logLevel));
+}
+
 $connstr  = $_SERVER['COUCHBASE_CONNSTR'] ?? 'couchbase://server';
 $username = $_SERVER['COUCHBASE_USER'] ?? 'username';
 $password = $_SERVER['COUCHBASE_PASS'] ?? 'password';
