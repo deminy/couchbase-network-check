@@ -18,6 +18,26 @@ docker run --rm \
   -ti deminy/couchbase-network-check:4.3.0
 ```
 
+In case you want to perform read-only checks, you can set the environment variable `COUCHBASE_READONLY` to `1`:
+
+```bash
+docker run --rm --platform=linux/amd64 \
+  -e COUCHBASE_CONNSTR="couchbase://host.docker.internal" \
+  -e COUCHBASE_USER="username" \
+  -e COUCHBASE_PASS="password" \
+  -e COUCHBASE_BUCKET="test" \
+  -e COUCHBASE_READONLY=1 \
+  -ti deminy/couchbase-network-check:3.2.2
+
+docker run --rm \
+  -e COUCHBASE_CONNSTR="couchbase://host.docker.internal" \
+  -e COUCHBASE_USER="username" \
+  -e COUCHBASE_PASS="password" \
+  -e COUCHBASE_BUCKET="test" \
+  -e COUCHBASE_READONLY=1 \
+  -ti deminy/couchbase-network-check:4.3.0
+```
+
 ## Local Development with Docker
 
 ### 1. Build Docker Images Manually
@@ -48,6 +68,10 @@ docker compose exec -ti couchbase4 php --ri couchbase # PHP SDK v4.3.0
 ```bash
 docker compose exec -ti couchbase3 php ./check.php
 docker compose exec -ti couchbase4 php ./check.php
+
+# If we want to perform read-only checks:
+docker compose exec -e COUCHBASE_READONLY=1 -ti couchbase3 php ./check.php
+docker compose exec -e COUCHBASE_READONLY=1 -ti couchbase4 php ./check.php
 ```
 
 ### 4. Clean Up

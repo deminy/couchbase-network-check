@@ -81,19 +81,28 @@ $connstr  = $_SERVER['COUCHBASE_CONNSTR'] ?? 'couchbase://server';
 $username = $_SERVER['COUCHBASE_USER'] ?? 'username';
 $password = $_SERVER['COUCHBASE_PASS'] ?? 'password';
 $bucket   = $_SERVER['COUCHBASE_BUCKET'] ?? 'test';
+$readOnly = isset($_SERVER['COUCHBASE_READONLY']);
 
 $clusterOptions = new ClusterOptions();
 $clusterOptions->credentials($username, $password);
 $cluster = new Cluster($connstr, $clusterOptions);
 $bucket  = $cluster->bucket($bucket);
 
-$insertOptions = new InsertOptions();
-$insertOptions->expiry(new \DateTime('+60 seconds'));
-$value  = json_encode(['foo' => 'bar']);
+$keys   = array_map(fn() => uniqid('test-') . '-' . rand(1, PHP_INT_MAX), range(1, 23));
 $report = new CouchbaseKvReport();
-for ($i = 0; $i < 23; $i++) {
-    $bucket->defaultCollection()->insert(uniqid('test-'), $value, $insertOptions);
-    $report->parseKvReport($bucket);
+if ($readOnly) {
+    foreach ($keys as $key) {
+        $bucket->defaultCollection()->getMulti($keys);
+        $report->parseKvReport($bucket);
+    }
+} else {
+    $insertOptions = new InsertOptions();
+    $insertOptions->expiry(new \DateTime('+60 seconds'));
+    $value = json_encode(['foo' => 'bar']);
+    foreach ($keys as $key) {
+        $bucket->defaultCollection()->insert($key, $value, $insertOptions);
+        $report->parseKvReport($bucket);
+    }
 }
 
 foreach ($report->getKvReport() as $state => $row) {
