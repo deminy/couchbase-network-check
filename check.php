@@ -18,6 +18,8 @@ if (is_readable($_SERVER['HOME'] . '/.composer/vendor/autoload.php')) {
 use Couchbase\Bucket;
 use Couchbase\Cluster;
 use Couchbase\ClusterOptions;
+use Couchbase\DocumentNotFoundException as Couchbase3DocumentNotFoundException;
+use Couchbase\Exception\DocumentNotFoundException as Couchbase4DocumentNotFoundException;
 use Couchbase\InsertOptions;
 
 /**
@@ -94,21 +96,8 @@ $clusterOptions = new ClusterOptions();
 $clusterOptions->credentials($username, $password);
 $cluster = new Cluster($connstr, $clusterOptions);
 
-// No bucket name specified, list all buckets.
 if (empty($bucketName)) {
-    echo "Listing all buckets in the cluster: ";
-    $bucketsFound = false;
-    foreach ($cluster->buckets()->getAllBuckets() as $bucketSettings) {
-        if (!$bucketsFound) {
-            $bucketsFound = true;
-        } else {
-            echo ', ';
-        }
-
-        /** \Couchbase\Management\BucketSettings $bucketSettings */
-        echo $bucketSettings->name();
-    }
-    echo '.', PHP_EOL;
+    echo 'Successfully connected to the Couchbase server without performing any operations.', PHP_EOL;
     exit(0);
 }
 
@@ -116,10 +105,19 @@ $bucket = $cluster->bucket($bucketName);
 $keys   = array_map(fn() => uniqid('test-') . '-' . rand(1, PHP_INT_MAX), range(1, 23));
 $report = new CouchbaseKvReport();
 if ($readOnly) {
-    foreach ($keys as $key) {
-        $bucket->defaultCollection()->getMulti($keys);
-        $report->parseKvReport($bucket);
+    $results = $bucket->defaultCollection()->getMulti($keys);
+    $report->parseKvReport($bucket);
+    foreach ($results as $result) {
+        $e = $result->error();
+        if (!empty($e) && (($e instanceof Couchbase3DocumentNotFoundException) || $e instanceof Couchbase4DocumentNotFoundException)) {
+            continue;
+        }
+
+        echo 'Failed to perform read-only checks on the Couchbase bucket "', $bucketName, '".', PHP_EOL;
+        exit(1);
     }
+
+    echo 'Successfully performed read-only operations on the Couchbase bucket "', $bucketName, '".', PHP_EOL, PHP_EOL;
 } else {
     $insertOptions = new InsertOptions();
     $insertOptions->expiry(new \DateTime('+60 seconds'));
@@ -128,10 +126,21 @@ if ($readOnly) {
         $bucket->defaultCollection()->insert($key, $value, $insertOptions);
         $report->parseKvReport($bucket);
     }
+
+    $results = $bucket->defaultCollection()->getMulti($keys);
+    foreach ($results as $result) {
+        if (!empty($result->error())) {
+            echo 'Failed to perform read/write checks on the Couchbase bucket "', $bucketName, '".', PHP_EOL;
+            exit(1);
+        }
+    }
+
+    echo 'Successfully performed read/write operations on the Couchbase bucket "', $bucketName, '".', PHP_EOL, PHP_EOL;
 }
 
+echo 'In addition, the KV report from Couchbase server is as follows:', PHP_EOL;
 foreach ($report->getKvReport() as $state => $row) {
     foreach ($row as $host => $count) {
-        printf("There are %d \"%s\" connections to Couchbase node \"%s\".\n", $count, $state, $host);
+        printf("  * There are %d \"%s\" connections to Couchbase node \"%s\"." . PHP_EOL, $count, $state, $host);
     }
 }
