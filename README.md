@@ -63,8 +63,8 @@ docker run --rm \
 ### 1. Build Docker Images Manually
 
 ```bash
-docker build --build-arg COUCHBASE_VERSION=4.4.0 -t deminy/couchbase-network-check .
-docker build --build-arg COUCHBASE_VERSION=4.4.0 -t deminy/couchbase-network-check:4.4.0 .
+docker build --build-arg COUCHBASE_VERSION=4.5.0 -t deminy/couchbase-network-check .
+docker build --build-arg COUCHBASE_VERSION=4.5.0 -t deminy/couchbase-network-check:4.5.0 .
 
 docker build --platform linux/amd64 \
   --build-arg COUCHBASE_VERSION=3.2.2 \
@@ -76,7 +76,7 @@ docker build --platform linux/amd64 \
 ```bash
 docker compose up -d
 
-docker compose exec -ti couchbase4 php --ri couchbase # PHP SDK v4.4.0
+docker compose exec -ti couchbase4 php --ri couchbase # PHP SDK v4.5.0
 docker compose exec -ti couchbase3 php --ri couchbase # PHP SDK v3.2.2
 ```
 
